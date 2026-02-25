@@ -2,6 +2,7 @@ import requests
 import json
 import time
 import os
+import random
 
 os.makedirs("stream", exist_ok=True)
 
@@ -12,6 +13,7 @@ LONGITUDE = 77.3910
 API_URL = f"https://api.open-meteo.com/v1/forecast?latitude={LATITUDE}&longitude={LONGITUDE}&hourly=precipitation,soil_moisture_0_to_7cm,runoff&forecast_hours=1&timezone=Asia%2FKolkata"
 
 print("🌍 Connecting to Open-Meteo Environmental Satellite Network...")
+print("⛈️  Randomized Anomaly Injection Engine: ONLINE")
 
 counter = 1
 while True:
@@ -25,14 +27,16 @@ while True:
             soil = hourly.get("soil_moisture_0_to_7cm", [0])[0] or 0
             runoff_val = hourly.get("runoff", [0])[0] or 0
 
-            # --- DEMO OVERRIDE ---
-            if counter % 3 == 0:
-                precip = 65.5
-                soil = 0.95
-                runoff_val = 12.0
-                print("⚡ DEMO OVERRIDE: Injecting Severe Storm Payload!")
+            # --- THE RANDOMIZED ANOMALY INJECTOR ---
+            # 30% chance to inject a random severe storm event instead of real data
+            if random.random() < 0.30:
+                print("\n⚠️ [WARNING] ATMOSPHERIC ANOMALY DETECTED!")
+                # Randomize the storm severity to prove the AI agents can scale their response
+                precip = round(random.uniform(40.0, 150.0), 2)
+                soil = round(random.uniform(0.80, 0.99), 2)
+                runoff_val = round(random.uniform(10.0, 45.0), 2)
+                print(f"⚡ Injecting Class {int(precip/30)} Storm Payload...")
 
-            # FIX 1: Generate a unique Unix timestamp for the ID and filename
             current_timestamp = time.time()
             unique_id = int(current_timestamp)
 
@@ -45,12 +49,11 @@ while True:
                 "timestamp": current_timestamp
             }
 
-            # FIX 1 (cont): File is now guaranteed to be completely unique
             filename = f"stream/open_meteo_{unique_id}.json"
             with open(filename, "w") as f:
                 json.dump(payload, f)
 
-            print(f"[{counter}] Fetched Live Data: {payload['precipitation_mm']}mm rain | {round(payload['soil_moisture_percent'], 2)}% soil moisture")
+            print(f"[{counter}] Dropped: {payload['precipitation_mm']}mm rain | {round(payload['soil_moisture_percent'], 2)}% soil")
             counter += 1
 
         else:
@@ -59,7 +62,6 @@ while True:
     except Exception as e:
         print(f"[CONNECTION ERROR] {e}")
 
-    # FIX 2: Increased sleep to 15 seconds.
-    # This ensures the 4-agent LangGraph Swarm has plenty of time to finish
-    # its processing before the next file triggers the Pathway engine.
-    time.sleep(15)
+    # Maintain a 20-second sleep to ensure we stay under the API rate limit
+    # while keeping the UI updates feeling brisk.
+    time.sleep(20)
