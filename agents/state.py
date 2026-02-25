@@ -5,8 +5,7 @@ class SwarmState(TypedDict):
     precipitation: float
     soil_moisture: float
     runoff: float
-    # Agent Outputs
-    sentinel_alert: str
-    infrastructure_report: str
-    policy_directive: str
-    final_plan: str
+    sentinel_alert: str        # Will now hold JSON
+    infrastructure_report: str # Will now hold JSON
+    policy_directive: str      # Will now hold JSON
+    final_plan: str            # Will now hold JSON
