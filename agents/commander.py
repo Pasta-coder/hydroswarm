@@ -10,7 +10,7 @@ llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
 
 class CommanderOutput(BaseModel):
     alert_color: str = Field(description="GREEN, YELLOW, ORANGE, or RED")
-    evacuation_required: bool = Field(description="True if life is at risk")
+    evacuation_required: str = Field(description="True if life is at risk")
     dispatch_message: str = Field(description="Strict, 2-sentence emergency action plan for ground workers")
 
 def commander_agent(state: SwarmState):
