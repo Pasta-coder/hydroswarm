@@ -1,22 +1,71 @@
 import pathway as pw
 from pathway.xpacks.llm.vector_store import VectorStoreServer
 from pathway.xpacks.llm.embedders import SentenceTransformerEmbedder
+import threading
+import time
+import os
+from duckduckgo_search import DDGS
 
-print("🧠 Booting up Pathway Live RAG Memory on port 8000...")
+print("🧠 Booting up Pathway Live RAG Memory & Broad Web Searcher...")
 
-# 1. Watch the data folder for any file changes
+# Ensure data directory exists
+os.makedirs("data", exist_ok=True)
+
+# ==========================================
+# 1. THE BROAD WEB SEARCHER (Background Thread)
+# ==========================================
+def dynamic_web_search():
+    # We target the location our simulator is generating weather for
+    target_location = "Noida Sector 62"
+    search_query = f"{target_location} drainage capacity waterlogging infrastructure news"
+
+    while True:
+        try:
+            print(f"\n🔍 [Broad Web Search] Scanning the internet for: '{search_query}'")
+
+            # Perform a broad internet search (Like a Google Search)
+            with DDGS() as ddgs:
+                results = list(ddgs.text(search_query, max_results=3))
+
+            # Format the unstructured web results into a clean context block
+            live_text = f"LIVE INTERNET CONTEXT FOR {target_location.upper()}:\n\n"
+            for res in results:
+                live_text += f"Source Title: {res.get('title')}\n"
+                live_text += f"Snippet: {res.get('body')}\n\n"
+
+            # Add a baseline fallback just in case the internet search returns vague results
+            live_text += "\nBASELINE SYSTEM METRICS:\n"
+            live_text += "Sector 62 baseline drainage limit is 45mm/hr. Excess routes to Okhla.\n"
+
+            # Drop the payload. Pathway detects this OS-level file change instantly!
+            with open("data/live_search_data.txt", "w") as f:
+                f.write(live_text)
+
+            print("✅ [Pathway Ingestion] Broad web search results saved. Pathway vectorizing instantly.")
+
+        except Exception as e:
+            print(f"⚠️ [Search Error] {e}")
+
+        # Run the broad search every 60 seconds
+        time.sleep(60)
+
+# Start the internet researcher in the background
+search_thread = threading.Thread(target=dynamic_web_search, daemon=True)
+search_thread.start()
+
+# ==========================================
+# 2. THE PATHWAY STREAMING VECTOR STORE
+# ==========================================
 data_sources = pw.io.fs.read(
     "./data",
     format="binary",
     with_metadata=True
 )
 
-# 2. Initialize the Vector Store Server
-# This automatically embeds the text and hosts it as a search engine
 server = VectorStoreServer(
     data_sources,
     embedder=SentenceTransformerEmbedder(model="all-MiniLM-L6-v2"),
 )
 
-# 3. Host the memory on localhost:8000
+# Host the memory on localhost:8000
 server.run_server(host="0.0.0.0", port=8000)
