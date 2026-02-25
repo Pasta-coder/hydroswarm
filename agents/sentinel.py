@@ -1,24 +1,30 @@
+import json
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
+from pydantic import BaseModel, Field
 from .state import SwarmState
 
 load_dotenv()
-llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+# DOWNGRADE: Using the ultra-fast 8B model to save compute/latency
+llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+
+class SentinelOutput(BaseModel):
+    threat_level: str = Field(description="One of: LOW, MODERATE, SEVERE, CRITICAL")
+    primary_driver: str = Field(description="The single most important environmental factor")
+    summary: str = Field(description="One sentence summary of the threat")
 
 def sentinel_agent(state: SwarmState):
     print(f"\n🚨 [Sentinel] Analyzing stream for {state['location']}...")
+
+    # Bind the LLM to output ONLY our Pydantic schema
+    structured_llm = llm.with_structured_output(SentinelOutput)
+
     prompt = f"""
-    You are the HydroSwarm Sentinel, an expert in urban environmental risk assessment.
-
-    Current Live Telemetry for {state['location']}:
-    - Precipitation: {state['precipitation']} mm/hr
-    - Soil Saturation: {state['soil_moisture']}%
-    - Surface Runoff: {state['runoff']} mm
-
-    Task: Do not calculate math. Your job is to interpret the qualitative human and urban impact of these metrics.
-    Analyze the synergy between high saturation and runoff. Does this profile indicate a manageable event, severe property damage, or an immediate threat to life?
-
-    Output exactly one concise sentence declaring the qualitative threat level and the primary environmental driver.
+    You are an environmental risk profiler.
+    Telemetry for {state['location']}: {state['precipitation']}mm rain, {state['soil_moisture']}% soil saturation, {state['runoff']}mm runoff.
+    Analyze the threat level. Do not calculate math.
     """
-    response = llm.invoke(prompt)
-    return {"sentinel_alert": response.content}
+
+    response = structured_llm.invoke(prompt)
+    # Store as a JSON string in the state
+    return {"sentinel_alert": response.model_dump_json()}
