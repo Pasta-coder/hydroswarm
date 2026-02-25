@@ -9,10 +9,14 @@ def policy_agent(state: SwarmState):
     print(f"⚖️  [Policy] Reviewing municipal protocols and traffic routing...")
     prompt = f"""
     You are the Policy & Logistics AI planner.
-    Infrastructure state: {state['infrastructure_report']}
 
-    Task: Based on the infrastructure report, autonomously determine the best logistical response. Do we need to deploy emergency fleets, activate water harvesting, or close roads?
-    Write a 1-to-2 sentence logistics and routing directive.
+    Context:
+    1. Threat Level: {state['sentinel_alert']}
+    2. Infrastructure Status: {state['infrastructure_report']}
+
+    Task: Autonomously formulate a logistics routing plan. You must anticipate one potential bottleneck or failure point based on the infrastructure status (e.g., if drains are at capacity, standard routes might be blocked).
+
+    Write a 2-sentence directive: Sentence 1 stating the primary deployment action, and Sentence 2 stating an alternative contingency route or fallback protocol.
     """
     response = llm.invoke(prompt)
     return {"policy_directive": response.content}
