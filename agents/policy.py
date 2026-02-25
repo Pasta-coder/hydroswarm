@@ -1,22 +1,28 @@
+import json
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
+from pydantic import BaseModel, Field
 from .state import SwarmState
 
 load_dotenv()
+# KEEP: 70B model because logistical reasoning is complex
 llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+
+class PolicyOutput(BaseModel):
+    primary_action: str = Field(description="Main deployment action in under 15 words")
+    contingency_route: str = Field(description="Alternative route or fallback protocol")
 
 def policy_agent(state: SwarmState):
     print(f"⚖️  [Policy] Reviewing municipal protocols and traffic routing...")
+    structured_llm = llm.with_structured_output(PolicyOutput)
+
     prompt = f"""
     You are the Policy & Logistics AI planner.
+    Threat Context: {state['sentinel_alert']}
+    Infrastructure Context: {state['infrastructure_report']}
 
-    Context:
-    1. Threat Level: {state['sentinel_alert']}
-    2. Infrastructure Status: {state['infrastructure_report']}
-
-    Task: Autonomously formulate a logistics routing plan. You must anticipate one potential bottleneck or failure point based on the infrastructure status (e.g., if drains are at capacity, standard routes might be blocked).
-
-    Write a 2-sentence directive: Sentence 1 stating the primary deployment action, and Sentence 2 stating an alternative contingency route or fallback protocol.
+    Formulate a logistics routing plan. Anticipate one failure point based on the infrastructure status.
     """
-    response = llm.invoke(prompt)
-    return {"policy_directive": response.content}
+
+    response = structured_llm.invoke(prompt)
+    return {"policy_directive": response.model_dump_json()}
