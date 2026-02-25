@@ -1,5 +1,6 @@
 import pathway as pw
 from agents import hydro_brain
+import json
 
 print("🚀 Booting up HydroSwarm Advanced AI Engine...")
 
@@ -25,7 +26,7 @@ active_weather = weather_stream.filter(
     weather_stream.precipitation_mm > 0.0
 )
 
-# 4. UPGRADED UDF: Passing all 3 variables to LangGraph
+# 4. UPGRADED UDF
 @pw.udf
 def trigger_swarm(location: str, precip: float, soil: float, runoff: float) -> str:
     initial_state = {
@@ -33,17 +34,29 @@ def trigger_swarm(location: str, precip: float, soil: float, runoff: float) -> s
         "precipitation": precip,
         "soil_moisture": soil,
         "runoff": runoff,
-        "infrastructure_status": "",
+        "sentinel_alert": "",
+        "infrastructure_report": "",
+        "policy_directive": "",
         "final_plan": ""
     }
+
+    # Run the full 4-agent cascade
     result = hydro_brain.invoke(initial_state)
-    return result["final_plan"]
+
+    # Package all 4 agent outputs into a single JSON string for the frontend
+    debate_output = {
+        "sentinel": result["sentinel_alert"],
+        "infrastructure": result["infrastructure_report"],
+        "policy": result["policy_directive"],
+        "commander": result["final_plan"]
+    }
+    return json.dumps(debate_output)
 
 # 5. EXECUTION
 ai_decisions = active_weather.select(
     active_weather.location,
     active_weather.precipitation_mm,
-    action_plan=trigger_swarm(
+    ai_debate=trigger_swarm(
         active_weather.location,
         active_weather.precipitation_mm,
         active_weather.soil_moisture_percent,
