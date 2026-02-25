@@ -1,0 +1,5 @@
+Location: Noida Sector 62
+Classification: High-Risk Urban Flood Zone & Over-Exploited Groundwater.
+Infrastructure Capacity: The central drainage system has a maximum capacity of 45mm/hr. Anything above this will cause severe waterlogging near Electronic City.
+Groundwater Status: 150% extraction rate. Extremely dry subterranean aquifers.
+Protocol: If soil moisture is below 50%, all excess surface runoff must be immediately diverted to the local rainwater harvesting grids near Route 3. If soil is saturated, divert heavy machinery to clear the Okhla reservoir pathways.
