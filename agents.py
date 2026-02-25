@@ -2,6 +2,7 @@ import os
 import json
 from typing import TypedDict
 from dotenv import load_dotenv
+import requests
 from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, END
 
@@ -39,14 +40,34 @@ def sentinel_agent(state: SwarmState):
     response = llm.invoke(prompt)
     return {"sentinel_alert": response.content}
 
-# AGENT 2: Infrastructure (Mocks a Pathway Document Store RAG lookup)
+# AGENT 2: Infrastructure (Queries the Pathway RAG Document Store)
 def infrastructure_agent(state: SwarmState):
-    print(f"🏗️  [Infrastructure] Querying Central Ground Water Board (CGWB) records...")
+    print(f"🏗️  [Infrastructure] Querying Pathway Live Memory for {state['location']}...")
+
+    # Actually search the Pathway Document Store!
+    try:
+        response = requests.post(
+            "http://127.0.0.1:8000/v1/retrieve",
+            json={"query": f"Infrastructure drainage capacity and protocol for {state['location']}", "k": 1}
+        )
+        docs = response.json()
+
+        # Extract the exact text from the text file
+        if docs and len(docs) > 0:
+            rag_context = docs[0].get("text", "No specific data found.")
+        else:
+            rag_context = "No infrastructure data available for this sector."
+    except Exception as e:
+        rag_context = f"Database offline. Fallback mode engaged."
+
+    print(f"   -> Found Context: {rag_context[:100]}...") # Print a snippet to the terminal
+
     prompt = f"""
     You are the Infrastructure AI.
     Alert received: {state['sentinel_alert']}
-    Simulated Database Context for {state['location']}: Groundwater is 150% over-exploited. Local drainage is at 80% capacity.
-    Write a 1-sentence infrastructure impact report based on this context.
+    Live Database Context for {state['location']}: {rag_context}
+
+    Write a 1-sentence infrastructure impact report based ONLY on the Live Database Context provided above.
     """
     response = llm.invoke(prompt)
     return {"infrastructure_report": response.content}
