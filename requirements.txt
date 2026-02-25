@@ -1,0 +1,24 @@
+# HydroSwarm - AI-Powered Urban Flood Response System
+# Install: pip install -r requirements.txt
+
+# ── Core Streaming Engine ──────────────────────────────────
+pathway>=0.15.0                  # Real-time data ingestion, UDFs, vector store server
+                                 # Includes: pw.io.fs, pw.io.csv, pw.Schema, pw.udf
+                                 # Includes: pathway.xpacks.llm.vector_store.VectorStoreServer
+                                 # Includes: pathway.xpacks.llm.embedders.SentenceTransformerEmbedder
+
+# ── Multi-Agent Orchestration ──────────────────────────────
+langgraph>=0.2.0                 # StateGraph workflow for agent pipeline
+langchain-groq>=0.2.0            # ChatGroq LLM wrapper (Llama 3.3 70B via Groq API)
+langchain-core>=0.3.0            # Base abstractions (transitive dep of langchain-groq)
+
+# ── Embeddings ─────────────────────────────────────────────
+sentence-transformers>=3.0.0     # all-MiniLM-L6-v2 model for Pathway RAG embeddings
+
+# ── Web & Data Fetching ────────────────────────────────────
+requests>=2.31.0                 # Open-Meteo API calls (live_fetcher.py)
+                                 # Pathway vector store HTTP queries (infrastructure agent)
+duckduckgo-search>=7.0.0         # DDGS web search for live RAG enrichment (rag_memory.py)
+
+# ── Configuration ──────────────────────────────────────────
+python-dotenv>=1.0.0             # .env file loading for GROQ_API_KEY
