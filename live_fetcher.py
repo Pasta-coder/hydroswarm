@@ -29,11 +29,19 @@ while True:
             soil = hourly.get("soil_moisture_0_to_7cm", [0])[0] or 0
             runoff_val = hourly.get("runoff", [0])[0] or 0
 
+            # --- THE HACKATHON DEMO INJECTOR ---
+            # Every 3rd request, we simulate a massive storm for the demo
+            if counter % 3 == 0:
+                precip = 65.5  # Heavy rain
+                soil = 0.95    # 95% saturated soil
+                runoff_val = 12.0 # High runoff
+                print("⚡ DEMO OVERRIDE: Injecting Severe Storm Payload!")
+
             payload = {
                 "event_id": counter,
                 "location": "Noida Sector 62",
                 "precipitation_mm": precip,
-                "soil_moisture_percent": soil * 100, # Convert to percentage
+                "soil_moisture_percent": soil * 100,
                 "surface_runoff_mm": runoff_val,
                 "timestamp": time.time()
             }
