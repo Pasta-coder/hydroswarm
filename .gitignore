@@ -2,3 +2,4 @@ stream
 .env
 venv
 __pycache__/
+sys.stdout
