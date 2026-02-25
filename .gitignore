@@ -4,3 +4,6 @@ venv
 __pycache__/
 sys.stdout
 Cache/
+
+frontend/node_modules/
+frontend/.next/
