@@ -12,16 +12,23 @@ def infrastructure_agent(state: SwarmState):
     try:
         response = requests.post(
             "http://127.0.0.1:8000/v1/retrieve",
-            json={"query": f"Infrastructure drainage capacity and protocol for {state['location']}", "k": 1}
+            json={"query": f"Infrastructure drainage capacity and protocol for {state['location']}", "k": 2}
         )
         docs = response.json()
 
         if docs and len(docs) > 0:
-            rag_context = docs[0].get("text", "No specific data found.")
+            rag_context = "\n---\n".join([doc.get("text", "")[:500] for doc in docs])
         else:
             rag_context = "No infrastructure data available for this sector."
     except Exception as e:
-        rag_context = "Database offline. Fallback mode engaged."
+        # THE FIX: Provide a structured fallback to prevent wild hallucinations
+        rag_context = """
+        WARNING: Live database is unavailable. Using emergency defaults:
+        - Assume standard drainage capacity of 30mm/hr.
+        - Assume moderate infrastructure resilience.
+        - Flag this report as UNVERIFIED.
+        """
+        rag_context = "Fallback mode engaged." + rag_context
 
     print(f"   -> Found Context: {rag_context[:100]}...")
 
