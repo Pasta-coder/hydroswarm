@@ -3,3 +3,4 @@ stream
 venv
 __pycache__/
 sys.stdout
+Cache/
