@@ -4,6 +4,8 @@ from pathway.xpacks.llm.embedders import SentenceTransformerEmbedder
 import threading
 import time
 import os
+import json
+from pathlib import Path
 from duckduckgo_search import DDGS
 
 print("🧠 Booting up Pathway Live RAG Memory & Broad Web Searcher...")
@@ -11,16 +13,29 @@ print("🧠 Booting up Pathway Live RAG Memory & Broad Web Searcher...")
 # Ensure data directory exists
 os.makedirs("data", exist_ok=True)
 
+ZONE_CONFIG_PATH = Path(__file__).parent / "active_zone.json"
+
+def get_target_location():
+    """Read the active zone from config (set by central server)."""
+    try:
+        if ZONE_CONFIG_PATH.exists():
+            with open(ZONE_CONFIG_PATH) as f:
+                config = json.load(f)
+            return config.get("location", "Noida Sector 62")
+    except (json.JSONDecodeError, IOError):
+        pass
+    return "Noida Sector 62"
+
 # ==========================================
 # 1. THE BROAD WEB SEARCHER (Background Thread)
 # ==========================================
 def dynamic_web_search():
-    # We target the location our simulator is generating weather for
-    target_location = "Noida Sector 62"
-    search_query = f"{target_location} drainage capacity waterlogging infrastructure news"
-
     while True:
         try:
+            # Re-read target location each cycle so the map can change it
+            target_location = get_target_location()
+            search_query = f"{target_location} drainage capacity waterlogging infrastructure news"
+
             print(f"\n🔍 [Broad Web Search] Scanning the internet for: '{search_query}'")
 
             # Perform a broad internet search (Like a Google Search)

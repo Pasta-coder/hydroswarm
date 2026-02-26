@@ -69,7 +69,7 @@ ai_decisions = active_weather.select(
 # Ensure Next.js public folder exists
 os.makedirs("frontend/public", exist_ok=True)
 
-# Print cleanly to terminal AND write to Next.js public folder
+# Print cleanly to terminal AND write to Next.js public folder AND notify central server
 def push_to_dashboard(row):
     print(f"\n✅ [Pathway Output] Decision ready for {row['location']}")
     try:

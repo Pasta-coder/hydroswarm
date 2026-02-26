@@ -19,8 +19,49 @@
   }
 }
 
+html,
 body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Leaflet tooltip dark theme */
+.leaflet-tooltip.zone-tooltip {
+  background: rgba(3, 7, 18, 0.92) !important;
+  border: 1px solid rgba(75, 85, 99, 0.5) !important;
+  color: #e5e7eb !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(8px);
+}
+
+.leaflet-tooltip.zone-tooltip::before {
+  border-top-color: rgba(3, 7, 18, 0.92) !important;
+}
+
+/* Hide Leaflet default attribution */
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+/* Custom scrollbar for slide-out panel */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.4);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.6);
 }
