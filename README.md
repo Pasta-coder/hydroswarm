@@ -296,7 +296,7 @@ All 3 backend services (RAG Memory, Live Fetcher, AI Engine) **auto-start** when
 
 <div align="center">
 
-**Built for Hack4Good — Sustainable Environmental Solutions by Integrating Pathway Software**
+**Built for Hack For Green — Sustainable Environmental Solutions by Integrating Pathway Software**
 
 *HydroSwarm turns raw weather data into life-saving decisions, in real time.*
 
