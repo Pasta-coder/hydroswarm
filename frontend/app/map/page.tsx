@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Zap,
   Waves,
+  Search,
 } from "lucide-react";
 
 const ZoneMap = dynamic(() => import("../components/ZoneMap"), { ssr: false });
@@ -39,6 +40,14 @@ export default function HydroSwarmDashboard() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [orchestratorOnline, setOrchestratorOnline] = useState(false);
   const reportPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Search state ────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{ display_name: string; lat: string; lon: string }>>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
 
   // ── Health check ────────────────────────────────────────
   useEffect(() => {
@@ -145,6 +154,65 @@ export default function HydroSwarmDashboard() {
     }
   }, [stopReportPolling]);
 
+  // ── Location search (debounced Nominatim forward geocoding) ─
+  const handleSearchInput = useCallback((value: string) => {
+    setSearchQuery(value);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    if (value.trim().length < 6) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      return;
+    }
+
+    setSearching(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value.trim())}&format=json&limit=5&addressdetails=1`,
+          { headers: { "User-Agent": "HydroSwarm/1.0" } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data);
+          setSearchOpen(data.length > 0);
+        }
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+  }, []);
+
+  const handleSearchSelect = useCallback(
+    (result: { display_name: string; lat: string; lon: string }) => {
+      const lat = parseFloat(result.lat);
+      const lng = parseFloat(result.lon);
+      // Extract a short name from display_name
+      const shortName = result.display_name.split(",").slice(0, 2).join(",").trim();
+
+      setSearchQuery("");
+      setSearchResults([]);
+      setSearchOpen(false);
+
+      // Trigger the same flow as a map click
+      handleMapClick({ lat, lng, name: shortName });
+    },
+    [handleMapClick]
+  );
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const peaksNeeded = 3;
   const peaksDetected = report?.peaks_detected ?? 0;
 
@@ -170,6 +238,53 @@ export default function HydroSwarmDashboard() {
             <p className="text-gray-500 text-[10px] uppercase tracking-[0.2em]">
               Click anywhere to begin monitoring
             </p>
+          </div>
+
+          {/* Search Box */}
+          <div ref={searchBoxRef} className="pointer-events-auto relative">
+            <div className="flex items-center bg-gray-950/80 backdrop-blur-md rounded-lg border border-gray-800/60 overflow-hidden">
+              <Search className="w-4 h-4 text-gray-500 ml-3 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchInput(e.target.value)}
+                onFocus={() => { if (searchResults.length > 0) setSearchOpen(true); }}
+                placeholder="Search location…"
+                className="bg-transparent text-sm text-gray-200 placeholder-gray-600 px-3 py-2.5 w-64 outline-none font-mono"
+              />
+              {searching && <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400 mr-3" />}
+              {searchQuery && !searching && (
+                <button
+                  onClick={() => { setSearchQuery(""); setSearchResults([]); setSearchOpen(false); }}
+                  className="mr-3 p-0.5 rounded hover:bg-gray-800 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 text-gray-500 hover:text-gray-300" />
+                </button>
+              )}
+            </div>
+
+            {/* Search Results Dropdown */}
+            {searchOpen && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-950/95 backdrop-blur-xl border border-gray-800/60 rounded-lg overflow-hidden shadow-2xl max-h-64 overflow-y-auto">
+                {searchResults.map((r, i) => (
+                  <button
+                    key={`${r.lat}-${r.lon}-${i}`}
+                    onClick={() => handleSearchSelect(r)}
+                    className="w-full text-left px-4 py-2.5 hover:bg-gray-800/60 transition-colors border-b border-gray-800/30 last:border-0 flex items-start gap-2.5"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-cyan-400 mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-sm text-gray-200 font-medium truncate">
+                        {r.display_name.split(",").slice(0, 2).join(",")}
+                      </div>
+                      <div className="text-[10px] text-gray-500 truncate">
+                        {r.display_name}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Status badges */}
