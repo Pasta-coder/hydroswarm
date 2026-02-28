@@ -15,9 +15,11 @@ import {
   Zap,
   Waves,
   Search,
+  Megaphone,
 } from "lucide-react";
 
 const ZoneMap = dynamic(() => import("../components/ZoneMap"), { ssr: false });
+import CitizenSosModal from "../components/CitizenSosModal";
 
 interface Report {
   location: string;
@@ -46,8 +48,10 @@ export default function HydroSwarmDashboard() {
   const [searchResults, setSearchResults] = useState<Array<{ display_name: string; lat: string; lon: string }>>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searching, setSearching] = useState(false);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchBoxRef = useRef<HTMLDivElement>(null);
+
+  // ── SOS state ───────────────────────────────────────────
+  const [sosOpen, setSosOpen] = useState(false);
 
   // ── Health check ────────────────────────────────────────
   useEffect(() => {
@@ -84,7 +88,7 @@ export default function HydroSwarmDashboard() {
     };
 
     poll();
-    reportPollRef.current = setInterval(poll, 4000);
+    reportPollRef.current = setInterval(poll, 2000);
   }, []);
 
   const stopReportPolling = useCallback(() => {
@@ -154,36 +158,60 @@ export default function HydroSwarmDashboard() {
     }
   }, [stopReportPolling]);
 
-  // ── Location search (debounced Nominatim forward geocoding) ─
+  // ── Location search (fires on Enter key press) ──────────
   const handleSearchInput = useCallback((value: string) => {
     setSearchQuery(value);
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+  }, []);
 
-    if (value.trim().length < 6) {
-      setSearchResults([]);
-      setSearchOpen(false);
-      return;
+  const executeSearch = useCallback(async () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+
+    // ── Check if input looks like coordinates: "lat, lng" or "lat lng" ──
+    const coordMatch = q.match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lng = parseFloat(coordMatch[2]);
+      if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        setSearchQuery("");
+        setSearchResults([]);
+        setSearchOpen(false);
+        handleMapClick({ lat, lng, name: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+        return;
+      }
     }
 
+    // ── Otherwise, forward geocode via Nominatim ──
     setSearching(true);
-    searchTimeoutRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value.trim())}&format=json&limit=5&addressdetails=1`,
-          { headers: { "User-Agent": "HydroSwarm/1.0" } }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(data);
-          setSearchOpen(data.length > 0);
-        }
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setSearching(false);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&addressdetails=1`,
+        { headers: { "User-Agent": "HydroSwarm/1.0" } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults(data);
+        setSearchOpen(data.length > 0);
       }
-    }, 400);
-  }, []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }, [searchQuery, handleMapClick]);
+
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        executeSearch();
+      }
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+      }
+    },
+    [executeSearch]
+  );
 
   const handleSearchSelect = useCallback(
     (result: { display_name: string; lat: string; lon: string }) => {
@@ -213,7 +241,7 @@ export default function HydroSwarmDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const peaksNeeded = 3;
+  const peaksNeeded = 1;
   const peaksDetected = report?.peaks_detected ?? 0;
 
   return (
@@ -248,9 +276,10 @@ export default function HydroSwarmDashboard() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 onFocus={() => { if (searchResults.length > 0) setSearchOpen(true); }}
-                placeholder="Search location…"
-                className="bg-transparent text-sm text-gray-200 placeholder-gray-600 px-3 py-2.5 w-64 outline-none font-mono"
+                placeholder="Search place or lat, lng — Enter ↵"
+                className="bg-transparent text-sm text-gray-200 placeholder-gray-600 px-3 py-2.5 w-72 outline-none font-mono"
               />
               {searching && <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400 mr-3" />}
               {searchQuery && !searching && (
@@ -353,6 +382,28 @@ export default function HydroSwarmDashboard() {
       )}
 
       {/* ── SLIDE-OUT REPORT PANEL ──────────────────────── */}
+
+      {/* ── SOS BUTTON (bottom-left, visible when location active) ── */}
+      {activeLocation && !panelOpen && (
+        <button
+          onClick={() => setSosOpen(true)}
+          className="absolute bottom-4 left-4 z-1000 pointer-events-auto flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105"
+        >
+          <Megaphone className="w-4 h-4" />
+          Citizen SOS
+        </button>
+      )}
+
+      {/* ── SOS MODAL ── */}
+      {sosOpen && activeLocation && (
+        <CitizenSosModal
+          lat={activeLocation.lat}
+          lng={activeLocation.lng}
+          locationName={activeLocation.name}
+          onClose={() => setSosOpen(false)}
+        />
+      )}
+
       <div
         className={`absolute top-0 right-0 h-full z-1001 transition-transform duration-500 ease-in-out ${
           panelOpen ? "translate-x-0" : "translate-x-full"
