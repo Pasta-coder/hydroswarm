@@ -58,11 +58,19 @@ export default function ZoneMap({ activeLocation, onMapClick }: ZoneMapProps) {
         { maxZoom: 18 }
       ).addTo(map);
 
-      // Click anywhere → reverse-geocode + notify parent
-      map.on("click", async (e: any) => {
+      // Click anywhere → notify parent IMMEDIATELY with coords,
+      // then reverse-geocode in background and update name
+      map.on("click", (e: any) => {
         const { lat, lng } = e.latlng;
-        const name = await reverseGeocode(lat, lng);
-        onMapClickRef.current({ lat, lng, name });
+        // Fire instantly with coordinate-based name so UI responds immediately
+        const tempName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        onMapClickRef.current({ lat, lng, name: tempName });
+        // Then resolve the real name in background
+        reverseGeocode(lat, lng).then((realName) => {
+          if (realName !== tempName) {
+            onMapClickRef.current({ lat, lng, name: realName });
+          }
+        });
       });
 
       mapRef.current = map;
