@@ -45,8 +45,8 @@ while True:
             runoff_val = hourly.get("runoff", [0])[0] or 0
 
             # --- THE RANDOMIZED ANOMALY INJECTOR ---
-            # 30% chance to inject a random severe storm event instead of real data
-            if random.random() < 0.30:
+            # 50% chance to inject a random severe storm event instead of real data
+            if random.random() < 0.50:
                 print("\n⚠️ [WARNING] ATMOSPHERIC ANOMALY DETECTED!")
                 # Randomize the storm severity to prove the AI agents can scale their response
                 precip = round(random.uniform(40.0, 150.0), 2)
@@ -79,6 +79,6 @@ while True:
     except Exception as e:
         print(f"[CONNECTION ERROR] {e}")
 
-    # Maintain a 20-second sleep to ensure we stay under the API rate limit
+    # Maintain a 10-second sleep for fast demo cycles
     # while keeping the UI updates feeling brisk.
-    time.sleep(20)
+    time.sleep(10)
