@@ -11,30 +11,15 @@ import {
   Scale, 
   Crown 
 } from "lucide-react"
+import Navbar from "./components/navbar"
 
 export default function LandingPage() {
   const [activeTab, setActiveTab] = useState<"point1" | "point2">("point1")
 
   return (
     <div className="bg-black text-white font-mono antialiased">
-
-      {/* NAVBAR */}
-      <nav className="flex items-center justify-between px-8 py-4 border-b border-gray-800">
-        <div className="flex items-center gap-3">
-          <Waves className="text-cyan-400 w-6 h-6" />
-          <span className="text-xl font-semibold tracking-tight">HYDROSWARM</span>
-        </div>
-
-        <a 
-          href="https://github.com/Pasta-coder/hydroswarm" 
-          target="_blank"
-          className="hover:text-cyan-400 transition"
-        >
-          <Github />
-        </a>
-      </nav>
-
-
+      <Navbar />
+      
       {/* HERO SECTION */}
       <section 
         className="relative flex flex-col items-center justify-center text-center h-[85vh] bg-cover bg-center"

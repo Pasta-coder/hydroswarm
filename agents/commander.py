@@ -1,11 +1,15 @@
+from email.mime import message
 import json
 import glob
 import os
 from pathlib import Path
+from xmlrpc import client
 from dotenv import load_dotenv
+from httpx import Client
 from langchain_groq import ChatGroq
 from pydantic import BaseModel, Field
 from .state import SwarmState
+from twilio.rest import Client as TwilioClient
 
 load_dotenv()
 # DOWNGRADE: 8B model, as this is purely a formatting/synthesis task
@@ -64,4 +68,38 @@ def commander_agent(state: SwarmState):
     """
 
     response = structured_llm.invoke(prompt)
+    send_whatsapp_message(response.dispatch_message)
     return {"final_plan": response.model_dump_json()}
+
+def send_whatsapp_message(report: str, recipient: str | None = None) -> None:
+    """Send a WhatsApp message containing *report*.
+
+    Configuration is read from environment variables so that callers
+    (or deployment) can change numbers without touching code.
+
+    - TWILIO_ACCOUNT_SID
+    - TWILIO_AUTH_TOKEN
+    - TWILIO_WHATSAPP_FROM  (optional, defaults to Twilio sandbox number)
+    - TWILIO_WHATSAPP_TO    (optional, used if *recipient* not provided)
+
+    The helper will silently return if configuration is missing.
+    """
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    from_number = os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
+    to_number = recipient or os.getenv("TWILIO_WHATSAPP_TO")
+
+    if not account_sid or not auth_token or not to_number:
+        print("[Commander] Twilio credentials or recipient not set, message not sent.")
+        return
+
+    client = TwilioClient(account_sid, auth_token)
+    try:
+        msg = client.messages.create(
+            from_=from_number,
+            body=report,
+            to=to_number,
+        )
+        print(f"[Commander] WhatsApp message sent; sid={msg.sid}")
+    except Exception as e:
+        print(f"[Commander] failed to send WhatsApp message: {e}")
