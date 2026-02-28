@@ -20,6 +20,7 @@ import {
 
 const ZoneMap = dynamic(() => import("../components/ZoneMap"), { ssr: false });
 import CitizenSosModal from "../components/CitizenSosModal";
+import SubterraneanGridWidget from "../components/SubterraneanGridWidget";
 
 interface Report {
   location: string;
@@ -184,17 +185,28 @@ export default function HydroSwarmDashboard() {
     // ── Otherwise, forward geocode via Nominatim ──
     setSearching(true);
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000); // 6s timeout
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&addressdetails=1`,
-        { headers: { "User-Agent": "HydroSwarm/1.0" } }
+        { headers: { "User-Agent": "HydroSwarm/1.0" }, signal: controller.signal }
       );
+      clearTimeout(timeout);
       if (res.ok) {
         const data = await res.json();
-        setSearchResults(data);
-        setSearchOpen(data.length > 0);
+        if (data.length > 0) {
+          setSearchResults(data);
+          setSearchOpen(true);
+        } else {
+          // No results — try treating as a direct location name and fly to first word
+          setSearchResults([]);
+          setSearchOpen(false);
+        }
       }
     } catch {
+      // Timeout or network error — clear spinner, don't hang
       setSearchResults([]);
+      setSearchOpen(false);
     } finally {
       setSearching(false);
     }
@@ -382,6 +394,11 @@ export default function HydroSwarmDashboard() {
       )}
 
       {/* ── SLIDE-OUT REPORT PANEL ──────────────────────── */}
+
+      {/* ── DRAINAGE GRID WIDGET (bottom-right, only when monitoring) ── */}
+      {activeLocation && (
+        <SubterraneanGridWidget isActive={!!activeLocation} locationName={activeLocation.name} />
+      )}
 
       {/* ── SOS BUTTON (bottom-left, visible when location active) ── */}
       {activeLocation && !panelOpen && (

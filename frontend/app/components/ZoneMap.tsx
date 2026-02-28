@@ -147,10 +147,13 @@ export default function ZoneMap({ activeLocation, onMapClick }: ZoneMapProps) {
  */
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=14`,
-      { headers: { "User-Agent": "HydroSwarm/1.0" } }
+      { headers: { "User-Agent": "HydroSwarm/1.0" }, signal: controller.signal }
     );
+    clearTimeout(timeout);
     if (!res.ok) throw new Error("nominatim error");
     const data = await res.json();
     // Pick the most useful name from the address breakdown
