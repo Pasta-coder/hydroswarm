@@ -378,7 +378,7 @@ def get_curated_report():
     active_loc = report["location"]
     zone_alert_count = sum(1 for a in alert_history if a.get("location") == active_loc)
     report["peaks_detected"] = zone_alert_count
-    report["ready"] = zone_alert_count >= 3
+    report["ready"] = zone_alert_count >= 1
 
     return report
 
@@ -455,6 +455,48 @@ def deactivate_zone():
     for f in STREAM_DIR.glob("*.json"):
         f.unlink()
     return {"message": "Zone deactivated, all services stopped", "results": results}
+
+
+# ─── Routes: Citizen SOS ───────────────────────────────────
+class SosReport(BaseModel):
+    lat: float
+    lng: float
+    report: str
+
+
+@app.post("/api/sos")
+def submit_sos(sos: SosReport):
+    """
+    Accept a citizen SOS ground-truth flood report.
+    Writes it as a text file in ./data/ so Pathway's VectorStoreServer
+    automatically indexes it into the RAG knowledge base.
+    """
+    if not sos.report.strip():
+        raise HTTPException(400, "Report text cannot be empty")
+
+    data_dir = BASE_DIR / "data"
+    os.makedirs(data_dir, exist_ok=True)
+
+    timestamp = int(time.time())
+    filename = f"citizen_sos_{timestamp}.txt"
+    filepath = data_dir / filename
+
+    content = (
+        f"URGENT CITIZEN SOS REPORT\n"
+        f"========================\n"
+        f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(timestamp))}\n"
+        f"Location: [{sos.lat:.6f}, {sos.lng:.6f}]\n"
+        f"Details: {sos.report.strip()}\n"
+    )
+
+    with open(filepath, "w") as f:
+        f.write(content)
+
+    return {
+        "message": "SOS report received and indexed",
+        "filename": filename,
+        "timestamp": timestamp,
+    }
 
 
 # ─── Routes: Health ───────────────────────────────────────

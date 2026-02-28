@@ -50,7 +50,7 @@ def dynamic_web_search():
 
             # Add a baseline fallback just in case the internet search returns vague results
             live_text += "\nBASELINE SYSTEM METRICS:\n"
-            live_text += "Sector 62 baseline drainage limit is 45mm/hr. Excess routes to Okhla.\n"
+            live_text += f"Standard urban drainage limit is ~30-45mm/hr. Excess overflows to nearest water body.\n"
 
             # Drop the payload. Pathway detects this OS-level file change instantly!
             with open("data/live_search_data.txt", "w") as f:
