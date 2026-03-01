@@ -1,5 +1,5 @@
-LIVE INTERNET CONTEXT FOR SYDNEY:
+LIVE INTERNET CONTEXT FOR 22.4500, 34.5600:
 
 
 BASELINE SYSTEM METRICS:
-Sector 62 baseline drainage limit is 45mm/hr. Excess routes to Okhla.
+Standard urban drainage limit is ~30-45mm/hr. Excess overflows to nearest water body.

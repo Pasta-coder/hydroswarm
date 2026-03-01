@@ -8,7 +8,7 @@ from confluent_kafka import Producer
 # Connect to Redpanda/Kafka
 conf = {'bootstrap.servers': 'localhost:9092'}
 producer = Producer(conf)
-topic = "drainage-v7"
+topic = "drainage-v8"
 
 ZONE_CONFIG_PATH = Path(__file__).parent / "active_zone.json"
 

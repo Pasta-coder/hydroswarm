@@ -17,7 +17,7 @@ print("⚡ Pathway initializing Kafka stream (Pure Float Mode)...")
 
 sensor_stream = pw.io.kafka.read(
     rdkafka_settings,
-    topic="drainage-v7",
+    topic="drainage-v8",
     format="json",
     schema=SensorSchema,
     autocommit_duration_ms=100

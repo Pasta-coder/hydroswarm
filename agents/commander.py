@@ -9,7 +9,12 @@ from httpx import Client
 from langchain_groq import ChatGroq
 from pydantic import BaseModel, Field
 from .state import SwarmState
-from twilio.rest import Client as TwilioClient
+
+try:
+    from twilio.rest import Client as TwilioClient
+except ImportError:
+    TwilioClient = None  # type: ignore
+    print("[Commander] twilio not installed — WhatsApp alerts disabled")
 
 load_dotenv()
 # DOWNGRADE: 8B model, as this is purely a formatting/synthesis task
@@ -91,6 +96,10 @@ def send_whatsapp_message(report: str, recipient: str | None = None) -> None:
 
     if not account_sid or not auth_token or not to_number:
         print("[Commander] Twilio credentials or recipient not set, message not sent.")
+        return
+
+    if TwilioClient is None:
+        print("[Commander] twilio package not installed, message not sent.")
         return
 
     client = TwilioClient(account_sid, auth_token)
