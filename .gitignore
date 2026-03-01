@@ -1,9 +1,18 @@
-stream
+stream/
 .env
-venv
+venv/
 __pycache__/
 sys.stdout
 Cache/
 
 frontend/node_modules/
 frontend/.next/
+
+# ── Runtime artifacts (regenerated automatically) ──
+active_zone.json
+frontend/public/latest_alert.json
+frontend/public/alert_history.json
+frontend/public/grid_status.jsonl
+data/citizen_sos_*.txt
+data/live_search_data.txt
+.DS_Store
